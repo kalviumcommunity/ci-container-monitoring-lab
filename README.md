@@ -101,3 +101,17 @@ commit and redeploy, or rebuild from a previous tag:
 git revert <commit>          # revert a bad release
 docker compose up -d --build # redeploy the reverted version
 ```
+
+## Cloud release mapping
+
+The local flow maps to a cloud release without changing the application:
+
+1. Build the same Docker image and push it to **Artifact Registry**, tagging it
+	with the commit SHA or release version.
+2. Deploy that immutable image tag to **Cloud Run**, configuring `PORT=3000`
+	and `MAINTENANCE_MODE=off`.
+3. Use **Cloud Monitoring** to observe request rate, latency, errors, and
+	container health from the Cloud Run service and exported application metrics.
+
+This mapping is documentation only; the local lab does not create cloud
+resources or incur billing.
