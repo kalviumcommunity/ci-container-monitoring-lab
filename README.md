@@ -101,3 +101,18 @@ commit and redeploy, or rebuild from a previous tag:
 git revert <commit>          # revert a bad release
 docker compose up -d --build # redeploy the reverted version
 ```
+
+## Cloud release mapping
+
+The same release flow can move to Google Cloud without changing the service:
+
+1. GitHub Actions builds the Docker image and pushes it to **Artifact Registry**.
+2. The release deploys that immutable image to **Cloud Run**, with `PORT`,
+	`SERVICE_NAME`, `APP_VERSION`, and `MAINTENANCE_MODE` supplied as environment
+	variables. Cloud Run provides the HTTPS endpoint and health management.
+3. **Cloud Monitoring** collects Cloud Run request, latency, error, and
+	container metrics. A dashboard and alert policies replace the local
+	Prometheus and Grafana views.
+
+This is a design mapping only; the lab remains entirely local and uses no cloud
+account or billing.

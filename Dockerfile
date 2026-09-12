@@ -1,9 +1,6 @@
 # Build a small production image for the service.
 FROM node:20-alpine
 
-# curl is used by the container health check.
-RUN apk add --no-cache curl
-
 WORKDIR /usr/src/app
 
 # Install dependencies first so Docker can cache this layer.
