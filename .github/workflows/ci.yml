@@ -37,7 +37,7 @@ jobs:
         run: docker build -t ci-container-monitoring-lab:ci .
 
       - name: Start container
-        run: docker run -d --name app -p 8080:8080 ci-container-monitoring-lab:ci
+        run: docker run -d --name app -p 8080:8080 -e MAINTENANCE_MODE=off ci-container-monitoring-lab:ci
 
       - name: Wait for the service
         run: |
