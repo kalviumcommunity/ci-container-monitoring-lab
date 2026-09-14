@@ -14,6 +14,7 @@ RUN npm install --omit=dev
 COPY app/ ./
 
 # The service reads PORT from the environment and defaults to 3000.
-EXPOSE 3000
+ENV PORT=8080
+EXPOSE 8080
 
 CMD ["node", "server.js"]
