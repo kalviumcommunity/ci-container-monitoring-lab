@@ -30,13 +30,23 @@ docker compose ps             # show container status and health
 docker compose logs -f app    # follow the application logs
 ```
 
+## Cloud mapping
+
+The local flow maps directly to managed cloud services:
+
+- Local image build → Google Artifact Registry
+- Local Docker Compose deploy → Google Cloud Run
+- Local Prometheus + Grafana monitoring → Google Cloud Monitoring
+
+The same CI flow that validates the app locally would also push the built image to Artifact Registry and deploy the image to Cloud Run, while Cloud Monitoring would replace the local dashboards for production observability.
+
 Services once up:
 
 | Service     | URL                      |
 |-------------|--------------------------|
-| App         | http://localhost:8080    |
-| Prometheus  | http://localhost:9090    |
-| Grafana     | http://localhost:3000    |
+| App         | http://localhost:8081    |
+| Prometheus  | http://localhost:9091    |
+| Grafana     | http://localhost:3001    |
 
 Grafana logs in anonymously (admin/admin also works). Open the **Service
 Overview** dashboard under the **Lab** folder.
@@ -50,22 +60,22 @@ docker compose down
 ## Verify the service
 
 ```bash
-curl localhost:8080/health     # -> {"status":"ok"}
-curl localhost:8080/           # -> service metadata
-curl localhost:8080/metrics    # -> Prometheus metrics
+curl localhost:8081/health     # -> {"status":"ok"}
+curl localhost:8081/           # -> service metadata
+curl localhost:8081/metrics    # -> Prometheus metrics
 ```
 
 Check the Prometheus scrape target:
 
 ```
-http://localhost:9090/targets   # the app target should be UP
+http://localhost:9091/targets   # the app target should be UP
 ```
 
 ## Generate sample traffic
 
 ```bash
-./scripts/generate-traffic.sh                       # defaults to localhost:8080
-./scripts/generate-traffic.sh http://localhost:8080 500
+./scripts/generate-traffic.sh                       # defaults to localhost:8081
+./scripts/generate-traffic.sh http://localhost:8081 500
 ```
 
 Then watch the panels in the Grafana **Service Overview** dashboard update.

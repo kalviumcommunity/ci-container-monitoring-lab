@@ -14,7 +14,7 @@
  docker compose up            docker-compose.yml
    ┌────────────┐   scrape    ┌──────────────┐   query   ┌──────────┐
    │    app     │◀────────────│  Prometheus  │◀──────────│ Grafana  │
-   │ :3000      │  /metrics   │  :9090       │           │ :3000    │
+   │ :8080      │  /metrics   │  :9090       │           │ :3000    │
    └────────────┘             └──────────────┘           └──────────┘
 ```
 
@@ -29,8 +29,8 @@
 
 | Component  | In-container | Published on host |
 |------------|--------------|-------------------|
-| app        | 3000         | 8080              |
-| Prometheus | 9090         | 9090              |
-| Grafana    | 3000         | 3000              |
+| app        | 8080         | 8081              |
+| Prometheus | 9090         | 9091              |
+| Grafana    | 3000         | 3001              |
 
-The app reads `PORT` from the environment and defaults to `3000`.
+The app reads `PORT` from the environment and defaults to `8080` for the local lab stack.

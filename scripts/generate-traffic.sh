@@ -3,7 +3,7 @@
 # Usage: ./scripts/generate-traffic.sh [base_url] [requests]
 set -euo pipefail
 
-BASE_URL="${1:-http://localhost:8080}"
+BASE_URL="${1:-http://localhost:8081}"
 COUNT="${2:-200}"
 ROUTES=("/" "/health" "/work" "/metrics")
 
