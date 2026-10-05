@@ -101,3 +101,11 @@ commit and redeploy, or rebuild from a previous tag:
 git revert <commit>          # revert a bad release
 docker compose up -d --build # redeploy the reverted version
 ```
+
+
+## Cloud Mapping
+
+To map this local flow to a cloud environment (e.g., Google Cloud Platform):
+1. **Build and Push**: Instead of building locally, use Cloud Build or GitHub Actions to build the Docker image and push it to Artifact Registry.
+2. **Deploy**: Deploy the pushed image to Cloud Run or Google Kubernetes Engine (GKE). You would use the port configured in the Dockerfile.
+3. **Observe**: Replace local Prometheus and Grafana with Google Cloud Monitoring (Stackdriver) to collect metrics and create dashboards natively.
