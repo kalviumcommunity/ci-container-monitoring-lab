@@ -10,10 +10,6 @@ const app = express();
 const PORT = parseInt(process.env.PORT || '3000', 10);
 const SERVICE_NAME = process.env.SERVICE_NAME || 'ci-container-monitoring-lab';
 
-// v2.0.0: guard the service behind a maintenance flag while the payment
-// subsystem is being migrated. Defaults to "on" so it is safe by default.
-const MAINTENANCE = process.env.MAINTENANCE_MODE || 'on';
-
 // ---------------------------------------------------------------------------
 // Prometheus metrics
 // ---------------------------------------------------------------------------
@@ -57,17 +53,13 @@ app.use((req, res, next) => {
 app.get('/', (req, res) => {
   res.json({
     service: SERVICE_NAME,
-    version: process.env.APP_VERSION || '2.0.0',
+    version: process.env.APP_VERSION || '1.0.0',
     message: 'Hello from the DevOps Foundations lab service',
   });
 });
 
 // Liveness / readiness probe used by Docker Compose and by cloud platforms.
 app.get('/health', (req, res) => {
-  if (MAINTENANCE !== 'off') {
-    console.error('FATAL: payment subsystem unavailable, failing health check');
-    return res.status(503).json({ status: 'unavailable' });
-  }
   res.status(200).json({ status: 'ok' });
 });
 

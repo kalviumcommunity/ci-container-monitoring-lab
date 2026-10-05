@@ -101,3 +101,47 @@ commit and redeploy, or rebuild from a previous tag:
 git revert <commit>          # revert a bad release
 docker compose up -d --build # redeploy the reverted version
 ```
+
+## Cloud Mapping
+
+The local workflow (**commit → CI → container → deploy → dashboard**) maps directly to managed Google Cloud services for production deployments:
+
+| Stage | Local Implementation | Equivalent Cloud Service / Pattern |
+|-------|----------------------|-----------------------------------|
+| **CI / Build** | GitHub Actions (test & local docker build) | GitHub Actions / Cloud Build running unit tests and building container images |
+| **Artifact Storage** | Local Docker daemon image cache | **Google Artifact Registry** (`us-central1-docker.pkg.dev/<PROJECT_ID>/<REPO>/<IMAGE>:<TAG>`) |
+| **Runtime / Deployment** | Docker Compose (`lab-app` container) | **Google Cloud Run** (managed serverless container deployment) |
+| **Service Health** | Docker Compose `healthcheck` (`/health`) | Cloud Run Startup & Liveness Probes against `/health` |
+| **Metrics Collection** | Prometheus scraping `/metrics` (port 3000) | **Google Cloud Managed Service for Prometheus (GMP)** scraping `/metrics` + Cloud Monitoring Native Metrics |
+| **Dashboards / Observability** | Grafana ("Service Overview" dashboard) | **Cloud Monitoring Dashboards** (metrics explorer, SLO monitoring, alerting) |
+| **Rollback** | Git revert + `docker compose up -d --build` | **Cloud Run Revision Traffic Splitting / Rollback** (`gcloud run services update-traffic --to-revisions`) or CI automated revert |
+
+### Cloud Workflow Summary
+
+1. **Build & Push to Artifact Registry:**
+   ```bash
+   # Build image and tag with commit SHA
+   docker build -t us-central1-docker.pkg.dev/$PROJECT_ID/lab-repo/app:$GITHUB_SHA .
+   # Push to Google Artifact Registry
+   docker push us-central1-docker.pkg.dev/$PROJECT_ID/lab-repo/app:$GITHUB_SHA
+   ```
+
+2. **Deploy to Cloud Run:**
+   ```bash
+   gcloud run deploy lab-app \
+     --image us-central1-docker.pkg.dev/$PROJECT_ID/lab-repo/app:$GITHUB_SHA \
+     --region us-central1 \
+     --port 3000 \
+     --set-env-vars SERVICE_NAME=ci-container-monitoring-lab,APP_VERSION=1.0.0 \
+     --allow-unauthenticated
+   ```
+
+3. **Monitor with Cloud Monitoring:**
+   - Use Cloud Run's built-in metrics for request counts, latency histograms, and container utilization.
+   - Use Google Cloud Managed Service for Prometheus to scrape custom application metrics (`/metrics`) and visualize them in Cloud Monitoring custom dashboards.
+
+4. **Zero-Downtime Rollback:**
+   ```bash
+   # Instantly route 100% of traffic back to the previous healthy revision
+   gcloud run services update-traffic lab-app --to-revisions=PREVIOUS_REVISION_NAME=100
+   ```
