@@ -8,8 +8,9 @@ services:
     environment:
       - SERVICE_NAME=ci-container-monitoring-lab
       - APP_VERSION=1.0.0
+      - MAINTENANCE_MODE=off
     ports:
-      - "8080:8080"
+      - "8080:3000"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 10s
