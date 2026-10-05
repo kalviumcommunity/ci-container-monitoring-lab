@@ -78,6 +78,31 @@ npm install
 npm test
 ```
 
+## Cloud mapping
+
+The local stack maps directly to a small AWS deployment without changing the
+application contract:
+
+| Local component | AWS equivalent | Deployment responsibility |
+|-----------------|----------------|---------------------------|
+| Docker image | Amazon ECR | Store the versioned service image |
+| Docker Compose app | Amazon ECS on Fargate | Run the app behind an Application Load Balancer |
+| `/health` | ECS container health check and ALB target check | Remove unhealthy tasks from traffic |
+| Prometheus | Amazon Managed Service for Prometheus | Scrape `/metrics` through a private network path |
+| Grafana | Amazon Managed Grafana | Query Prometheus and display the Service Overview dashboard |
+| GitHub Actions | OIDC federated deploy role | Build, test, push the image, and update the ECS service |
+
+The container keeps port `3000`, the load balancer publishes the user-facing
+port, and `SERVICE_NAME`, `APP_VERSION`, and `MAINTENANCE_MODE` remain runtime
+environment variables. Production secrets should be supplied through AWS
+Secrets Manager or Systems Manager Parameter Store rather than committed to
+Compose or workflow files.
+
+For rollback, deploy the previous immutable ECR image tag or ECS task-definition
+revision, then confirm the ALB health check and `/metrics` series recover. The
+same procedure is exercised locally with `git revert <commit>` followed by
+`docker compose up -d --build`.
+
 ## GitHub Actions
 
 The workflow in `.github/workflows/ci.yml` runs automatically on every push and
