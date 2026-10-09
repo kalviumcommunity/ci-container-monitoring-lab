@@ -101,3 +101,32 @@ commit and redeploy, or rebuild from a previous tag:
 git revert <commit>          # revert a bad release
 docker compose up -d --build # redeploy the reverted version
 ```
+
+## Cloud release mapping (documentation only)
+
+The local flow maps to Google Cloud without changing the service's container
+contract. With a project and billing-enabled Artifact Registry repository
+already configured, the release commands would look like this:
+
+```bash
+PROJECT_ID="your-project"
+REGION="us-central1"
+REPOSITORY="services"
+IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/ci-container-monitoring-lab:1.0.0"
+
+gcloud config set project "$PROJECT_ID"
+gcloud auth configure-docker "${REGION}-docker.pkg.dev"
+docker build -t "$IMAGE" .
+docker push "$IMAGE"
+gcloud run deploy ci-container-monitoring-lab \
+  --image "$IMAGE" \
+  --region "$REGION" \
+  --set-env-vars SERVICE_NAME=ci-container-monitoring-lab,APP_VERSION=1.0.0
+```
+
+Cloud Monitoring provides Cloud Run request, latency, and instance metrics for
+dashboards and alerts. For application-specific Prometheus metrics, configure
+an OpenTelemetry or Managed Service for Prometheus collection path; Cloud Run
+does not automatically scrape `/metrics`.
+
+No cloud resources are created as part of this lab.
