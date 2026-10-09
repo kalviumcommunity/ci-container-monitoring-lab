@@ -101,3 +101,16 @@ commit and redeploy, or rebuild from a previous tag:
 git revert <commit>          # revert a bad release
 docker compose up -d --build # redeploy the reverted version
 ```
+
+## Cloud Deployment Mapping
+
+A mapping of this local DevOps flow to an equivalent production deployment on Google Cloud Platform (GCP):
+
+| Local Stack Component | Cloud Equivalent (GCP) | Description & Implementation Details |
+|---|---|---|
+| **Local Docker Build** (`Dockerfile`) | **Google Artifact Registry (GAR)** | Build and push the container image to `us-docker.pkg.dev/$PROJECT_ID/repo/image:$COMMIT_SHA` via GitHub Actions or Cloud Build. |
+| **Docker Compose Deploy** (`docker-compose.yml`) | **Google Cloud Run** | Deploy serverless container services using `gcloud run deploy --image ... --port 3000 --min-instances 1`. Configure HTTP liveness/readiness probes targeting `/health`. |
+| **Prometheus Scraping** (`prometheus.yml`) | **Google Cloud Managed Service for Prometheus (GMP)** / OpenTelemetry Collector | Scrapes the `/metrics` endpoint using Managed Service for Prometheus PodMonitoring / Sidecar agent, or exports telemetry via OpenTelemetry Collector. |
+| **Grafana Dashboards** (`service-overview.json`) | **Google Cloud Monitoring Dashboards** | Custom dashboards configured with MQL/PromQL metrics (e.g. `http_requests_total`, p95 `http_request_duration_seconds`), accompanied by Alerting Policies for 5xx error spikes or latency breaches. |
+| **Local Rollback** (`git revert`) | **Cloud Run Revisions & Traffic Splitting** | Instant zero-downtime rollback by shifting 100% traffic back to the previous healthy revision: `gcloud run services update-traffic <service> --to-revisions=<PREV_REVISION>=100`. |
+
