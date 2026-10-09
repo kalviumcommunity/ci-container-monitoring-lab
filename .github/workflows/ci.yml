@@ -20,10 +20,14 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "12"
+          node-version: "20"
 
       - name: Run unit tests
-        run: npm test
+        env:
+          MAINTENANCE_MODE: off
+        run: |
+          npm install
+          npm test
 
   docker-build:
     name: Build and smoke-test image
@@ -37,7 +41,7 @@ jobs:
         run: docker build -t ci-container-monitoring-lab:ci .
 
       - name: Start container
-        run: docker run -d --name app -p 8080:3000 ci-container-monitoring-lab:ci
+        run: docker run -d -e MAINTENANCE_MODE=off --name app -p 8080:3000 ci-container-monitoring-lab:ci
 
       - name: Wait for the service
         run: |

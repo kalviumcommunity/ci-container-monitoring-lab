@@ -101,3 +101,11 @@ commit and redeploy, or rebuild from a previous tag:
 git revert <commit>          # revert a bad release
 docker compose up -d --build # redeploy the reverted version
 ```
+
+## Cloud Mapping
+
+This local workflow directly maps to a modern cloud-native deployment model:
+
+1. **Build and Push**: Instead of building locally, GitHub Actions would build the Docker image and push it to Google Cloud Artifact Registry.
+2. **Deploy**: Instead of `docker compose up`, the image would be deployed to Google Cloud Run, a fully managed serverless platform.
+3. **Observe**: Instead of local Prometheus and Grafana, the `/metrics` endpoint would be scraped by Google Cloud Managed Service for Prometheus, and logs/dashboards would be viewed in Google Cloud Monitoring.
