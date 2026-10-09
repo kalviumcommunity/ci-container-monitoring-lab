@@ -101,3 +101,11 @@ commit and redeploy, or rebuild from a previous tag:
 git revert <commit>          # revert a bad release
 docker compose up -d --build # redeploy the reverted version
 ```
+
+## Cloud Mapping
+
+This local pipeline maps directly to a managed cloud deployment in Google Cloud Platform:
+
+- **Build and Push**: Instead of building locally, CI builds the container image and pushes it to **Artifact Registry**.
+- **Deploy**: Instead of running via `docker compose`, the image from Artifact Registry is deployed to **Cloud Run**, a fully managed serverless platform.
+- **Monitoring**: Instead of local Prometheus and Grafana, the service's health and metrics are observed using **Cloud Monitoring**.
