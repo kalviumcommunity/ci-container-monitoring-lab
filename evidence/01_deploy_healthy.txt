@@ -1,0 +1,11 @@
+COMMAND: docker compose ps
+NAME             IMAGE                               COMMAND                  SERVICE      CREATED          STATUS                    PORTS
+lab-app          ci-container-monitoring-lab:local   "docker-entrypoint.s…"   app          36 seconds ago   Up 35 seconds (healthy)   0.0.0.0:8080->3000/tcp, [::]:8080->3000/tcp
+lab-grafana      grafana/grafana:11.1.0              "/run.sh"                grafana      35 seconds ago   Up 34 seconds             0.0.0.0:3000->3000/tcp, [::]:3000->3000/tcp
+lab-prometheus   prom/prometheus:v2.53.0             "/bin/prometheus --c…"   prometheus   35 seconds ago   Up 35 seconds             0.0.0.0:9090->9090/tcp, [::]:9090->9090/tcp
+
+COMMAND: GET http://localhost:8080/health
+{"status":"ok"}
+
+COMMAND: GET http://localhost:8080/
+{"service":"ci-container-monitoring-lab","version":"1.0.0","message":"Hello from the DevOps Foundations lab service"}

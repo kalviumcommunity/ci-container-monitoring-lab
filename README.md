@@ -101,3 +101,22 @@ commit and redeploy, or rebuild from a previous tag:
 git revert <commit>          # revert a bad release
 docker compose up -d --build # redeploy the reverted version
 ```
+
+## Cloud release mapping
+
+This lab runs locally and does not require a cloud deployment, but the same
+commit-to-monitored-service flow maps directly to a managed cloud release:
+
+| Local stage | Cloud equivalent |
+|-------------|------------------|
+| GitHub Actions installs dependencies, runs tests and builds the Docker image | GitHub Actions keeps the same CI gate and builds the release image |
+| Local Docker image `ci-container-monitoring-lab:local` | The CI job would tag and push the image to Google Artifact Registry |
+| Docker Compose runs the service container and its local dependencies | Cloud Run would deploy the Artifact Registry image as the managed service |
+| `/health` and `/metrics` prove the running container is healthy and observable | Cloud Run health checks and Cloud Monitoring metrics/logs provide the managed runtime view |
+| Prometheus and Grafana show request rate and latency locally | Cloud Monitoring dashboards and alerts show the same production signals |
+| `git revert` plus `docker compose up -d --build` restores the last good local release | A rollback would redeploy the previous Cloud Run revision or a previous image tag |
+
+No cloud resources are required for this assignment. The mapping documents where
+each local proof would land in a production-style Google Cloud release: Artifact
+Registry for images, Cloud Run for deployment, and Cloud Monitoring for
+observability.
