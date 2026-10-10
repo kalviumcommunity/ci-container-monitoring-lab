@@ -1,0 +1,17 @@
+COMMAND: generate sample traffic against /, /health, /work, /metrics
+request=1 route=/health status=200
+request=2 route=/work status=200
+request=3 route=/metrics status=200
+request=4 route=/ status=200
+request=5 route=/health status=200
+request=6 route=/work status=200
+request=7 route=/metrics status=200
+request=8 route=/ status=200
+request=9 route=/health status=200
+request=10 route=/work status=200
+request=11 route=/metrics status=200
+request=12 route=/ status=200
+request=13 route=/health status=200
+request=14 route=/work status=200
+request=15 route=/metrics status=200
+request=16 route=/ status=200

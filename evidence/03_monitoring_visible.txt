@@ -1,0 +1,11 @@
+COMMAND: Prometheus targets API
+job=ci-container-monitoring-lab scrapeUrl=http://app:3000/metrics health=up lastError=
+
+COMMAND: Prometheus query sum(rate(http_requests_total[1m]))
+{"metric":{},"value":[1791618822.807,"1.3521182490233714"]}
+
+COMMAND: Grafana datasource health
+{"details":{"application":"Prometheus","features":{"rulerApiEnabled":false}},"message":"Successfully queried the Prometheus API.","status":"OK"}
+
+COMMAND: Grafana dashboard exists
+dashboardTitle=Service Overview panelCount=3

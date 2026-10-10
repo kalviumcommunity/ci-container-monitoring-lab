@@ -1,0 +1,14 @@
+COMMAND: npm test (run in app/)
+npm notice run ci-container-monitoring-lab@1.0.0 test
+npm notice run node --test
+✔ GET /health returns 200 and status ok (40.592ms)
+✔ GET /metrics exposes prometheus metrics (16.9318ms)
+✔ GET / returns service metadata (9.4335ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 7509.7162

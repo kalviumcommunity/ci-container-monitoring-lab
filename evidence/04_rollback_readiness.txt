@@ -1,0 +1,21 @@
+ROLLBACK READINESS DEMO
+Step 1: stop healthy app container and start a bad release with MAINTENANCE_MODE=on
+badContainer=8780ee4671c005b1826d129367c39b1a13041dbbd94d4ae8f75b446a2f5fb5be
+
+COMMAND: health check during bad release
+status=503 error=Response status code does not indicate success: 503 (Service Unavailable).
+
+COMMAND: docker logs lab-app --tail 10 during bad release
+ci-container-monitoring-lab listening on port 3000
+FATAL: payment subsystem unavailable, failing health check
+
+Step 2: rollback by removing bad release and redeploying Compose version with MAINTENANCE_MODE=off
+
+COMMAND: health check after rollback
+status=200 body={"status":"ok"}
+
+COMMAND: docker compose ps after rollback
+NAME             IMAGE                               COMMAND                  SERVICE      CREATED              STATUS                   PORTS
+lab-app          ci-container-monitoring-lab:local   "docker-entrypoint.s…"   app          9 seconds ago        Up 8 seconds (healthy)   0.0.0.0:8080->3000/tcp, [::]:8080->3000/tcp
+lab-grafana      grafana/grafana:11.1.0              "/run.sh"                grafana      About a minute ago   Up About a minute        0.0.0.0:3000->3000/tcp, [::]:3000->3000/tcp
+lab-prometheus   prom/prometheus:v2.53.0             "/bin/prometheus --c…"   prometheus   About a minute ago   Up About a minute        0.0.0.0:9090->9090/tcp, [::]:9090->9090/tcp
