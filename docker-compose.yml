@@ -6,10 +6,12 @@ services:
     image: ci-container-monitoring-lab:local
     container_name: lab-app
     environment:
-      - SERVICE_NAME=ci-container-monitoring-lab
-      - APP_VERSION=1.0.0
+      SERVICE_NAME: ci-container-monitoring-lab
+      APP_VERSION: 1.0.0
+      MAINTENANCE_MODE: "off"
+      PORT: 3000
     ports:
-      - "8080:8080"
+      - "8080:3000"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 10s
@@ -26,7 +28,8 @@ services:
     ports:
       - "9090:9090"
     depends_on:
-      - app
+      app:
+        condition: service_healthy
     restart: unless-stopped
 
   grafana:
