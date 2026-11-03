@@ -109,11 +109,12 @@ docker compose build app
 ./scripts/rollback-smoke-test.sh ci-container-monitoring-lab:local
 ```
 
-The test first verifies a known-good release, starts a deliberately unhealthy
-candidate (maintenance mode enabled), confirms that its readiness endpoint
-returns HTTP 503, replaces it with the known-good image/configuration, and
-requires HTTP 200 after recovery. This validates the rollback/recovery
-mechanism; it does not claim that a production release was rolled back.
+The test first verifies the known-good image, builds a separate test-only
+candidate image that intentionally exits during startup, confirms that the
+candidate container terminates with a non-zero exit code, removes it, and
+re-deploys the previously verified known-good image. It then requires HTTP 200
+from the recovered service. This exercises an actual image replacement and
+recovery path; it does not claim that a production release was rolled back.
 
 ## Cloud release mapping (documentation only)
 
