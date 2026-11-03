@@ -3,45 +3,62 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: ci-container-monitoring-lab:local
+    image: ${APP_IMAGE:-ci-container-monitoring-lab:local}
     container_name: lab-app
     environment:
-      - SERVICE_NAME=ci-container-monitoring-lab
-      - APP_VERSION=1.0.0
+      SERVICE_NAME: ci-container-monitoring-lab
+      APP_VERSION: ${APP_VERSION:-1.0.0}
+      MAINTENANCE_MODE: "off"
+      PORT: 3000
     ports:
-      - "8080:8080"
+      - "8080:3000"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
-      interval: 10s
+      interval: 5s
       timeout: 3s
-      retries: 5
+      retries: 3
       start_period: 5s
-    restart: unless-stopped
+    restart: ${APP_RESTART_POLICY:-unless-stopped}
 
   prometheus:
     image: prom/prometheus:v2.53.0
     container_name: lab-prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     ports:
       - "9090:9090"
     depends_on:
-      - app
+      app:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9090/-/ready"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
     restart: unless-stopped
 
   grafana:
     image: grafana/grafana:11.1.0
     container_name: lab-grafana
     environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_AUTH_ANONYMOUS_ENABLED=true
-      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
     ports:
       - "3000:3000"
     depends_on:
-      - prometheus
+      prometheus:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
     restart: unless-stopped
