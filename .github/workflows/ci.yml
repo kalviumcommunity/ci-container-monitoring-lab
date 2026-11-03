@@ -75,12 +75,14 @@ jobs:
             curl --silent --show-error --fail 'http://localhost:9090/api/v1/query?query=http_requests_total' | jq -e '.data.result | length > 0'
             echo "=== Grafana dashboard provisioning ==="
             curl --silent --show-error --fail 'http://localhost:3000/api/search?query=Service%20Overview' | jq -e 'any(.[]; .title == "Service Overview")'
+            echo "=== Live metric query through Grafana datasource proxy ==="
+            curl --silent --show-error --fail 'http://localhost:3000/api/datasources/proxy/uid/prometheus/api/v1/query?query=http_requests_total' | jq -e '.data.result | length > 0'
           } | tee evidence/integration-results.txt
 
       - name: Verify rollback from an unhealthy candidate to the known-good image
         run: |
           chmod +x scripts/rollback-smoke-test.sh
-          ./scripts/rollback-smoke-test.sh ci-container-monitoring-lab:local | tee evidence/rollback-results.txt
+          ./scripts/rollback-smoke-test.sh | tee evidence/rollback-results.txt
 
       - name: Save CI evidence artifact
         if: always()
