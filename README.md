@@ -80,15 +80,18 @@ docker compose config
 
 ## GitHub Actions
 
-The workflow runs on pushes and pull requests. It installs dependencies on
-Node.js 20, runs the unit tests, builds the Docker image, starts the container
-with the service's health check enabled, and verifies that the metrics endpoint
-returns Prometheus metrics.
+The workflow runs on pushes and pull requests. It installs locked dependencies
+on Node.js 20, runs the service tests, starts the complete Docker Compose stack,
+waits for the app, Prometheus and Grafana, generates request traffic, verifies
+that Prometheus reports the app target as UP and has request metrics, and checks
+that Grafana has loaded the Service Overview dashboard. It also runs the
+rollback smoke test below. CI saves a machine-readable integration report as a
+workflow artifact.
 
 ## Rollback readiness
 
 Keep releases in version control and use a revert commit to back out a bad
-change without rewriting shared history.
+change without rewriting shared history:
 
 ```bash
 git log --oneline
@@ -98,19 +101,19 @@ docker compose ps
 curl -fsS http://localhost:8080/health
 ```
 
-To return to a known-good tagged version instead, check out the tag on a
-separate rollback branch and rebuild from that revision:
+For a repeatable automated recovery check, run the rollback smoke test after
+building the app image:
 
 ```bash
-git switch -c rollback/known-good <known-good-tag>
-docker compose up -d --build
-docker compose ps
-curl -fsS http://localhost:8080/health
+docker compose build app
+./scripts/rollback-smoke-test.sh ci-container-monitoring-lab:local
 ```
 
-Confirm the app is healthy and the Prometheus target returns to **UP** after
-the rollback. These commands describe the rollback procedure; run them locally
-to capture evidence for your PR.
+The test first verifies a known-good release, starts a deliberately unhealthy
+candidate (maintenance mode enabled), confirms that its readiness endpoint
+returns HTTP 503, replaces it with the known-good image/configuration, and
+requires HTTP 200 after recovery. This validates the rollback/recovery
+mechanism; it does not claim that a production release was rolled back.
 
 ## Cloud release mapping (documentation only)
 
