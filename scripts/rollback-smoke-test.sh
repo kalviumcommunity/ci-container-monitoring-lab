@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Exercise rollback by replacing an unhealthy candidate with the known-good image.
-# The candidate is deliberately started with the app's fail-closed maintenance
-# setting. The recovery step restores the known-good image/configuration.
+# Verify image rollback: a known-good release is replaced by a candidate image
+# that exits at startup, then the known-good image is restored.
 set -euo pipefail
 
-IMAGE="${1:-ci-container-monitoring-lab:local}"
+GOOD_IMAGE="${1:-ci-container-monitoring-lab:local}"
+CANDIDATE_IMAGE="${2:-ci-container-monitoring-lab:candidate}"
 PORT="${ROLLBACK_TEST_PORT:-18080}"
 BASE_URL="http://127.0.0.1:${PORT}"
 GOOD_CONTAINER="rollback-known-good"
@@ -15,37 +15,54 @@ cleanup() {
 }
 trap cleanup EXIT
 
-wait_for_status() {
-  expected="$1"
-  label="$2"
+wait_for_health() {
   for attempt in $(seq 1 20); do
-    actual="$(curl --silent --output /dev/null --write-out '%{http_code}' "$BASE_URL/health" || true)"
-    if [[ "$actual" == "$expected" ]]; then
-      echo "$label returned HTTP $actual as expected"
+    if curl --silent --fail "$BASE_URL/health" >/dev/null; then
+      echo "Known-good release is healthy (HTTP 200)"
       return 0
     fi
     sleep 2
   done
-  echo "$label did not return HTTP $expected (last status: ${actual:-no response})"
-  docker logs "$GOOD_CONTAINER" "$CANDIDATE_CONTAINER" 2>/dev/null || true
+  echo "Known-good release did not become healthy"
+  docker logs "$GOOD_CONTAINER" 2>/dev/null || true
   return 1
 }
 
-# Establish the known-good release and verify it before simulating a bad release.
+# Verify the currently deployable image before testing the failed candidate.
 docker run -d --name "$GOOD_CONTAINER" -p "${PORT}:3000" \
-  -e MAINTENANCE_MODE=off "$IMAGE" >/dev/null
-wait_for_status 200 "Known-good release"
+  -e MAINTENANCE_MODE=off "$GOOD_IMAGE" >/dev/null
+wait_for_health
 docker rm -f "$GOOD_CONTAINER" >/dev/null
 
-# Simulate a faulty candidate release whose readiness check fails.
-docker run -d --name "$CANDIDATE_CONTAINER" -p "${PORT}:3000" \
-  -e MAINTENANCE_MODE=on "$IMAGE" >/dev/null
-wait_for_status 503 "Faulty candidate"
+# Build a deliberately broken candidate image that exits during startup.
+docker build -f scripts/Dockerfile.rollback-candidate -t "$CANDIDATE_IMAGE" .
+docker run -d --name "$CANDIDATE_CONTAINER" -p "${PORT}:3000" "$CANDIDATE_IMAGE" >/dev/null
+
+# A failed release must terminate; do not mistake a running but unready app for success.
+for attempt in $(seq 1 20); do
+  state="$(docker inspect --format '{{.State.Status}}' "$CANDIDATE_CONTAINER")"
+  if [[ "$state" == "exited" ]]; then
+    break
+  fi
+  sleep 1
+done
+if [[ "$state" != "exited" ]]; then
+  echo "Faulty candidate unexpectedly remained running (state: $state)"
+  docker logs "$CANDIDATE_CONTAINER" || true
+  exit 1
+fi
+exit_code="$(docker inspect --format '{{.State.ExitCode}}' "$CANDIDATE_CONTAINER")"
+if [[ "$exit_code" == "0" ]]; then
+  echo "Faulty candidate exited successfully; expected a non-zero exit code"
+  exit 1
+fi
+echo "Faulty candidate failed as expected (container exit code $exit_code)"
+docker logs "$CANDIDATE_CONTAINER" || true
 docker rm -f "$CANDIDATE_CONTAINER" >/dev/null
 
-# Roll back by restoring the known-good release on the same service port.
+# Roll back by deploying the previously verified known-good image again.
 docker run -d --name "$GOOD_CONTAINER" -p "${PORT}:3000" \
-  -e MAINTENANCE_MODE=off "$IMAGE" >/dev/null
-wait_for_status 200 "Rolled-back release"
+  -e MAINTENANCE_MODE=off "$GOOD_IMAGE" >/dev/null
+wait_for_health
 
-echo "Rollback smoke test passed: unhealthy candidate replaced by healthy known-good release."
+echo "Rollback smoke test passed: failed candidate image replaced by the known-good image."
