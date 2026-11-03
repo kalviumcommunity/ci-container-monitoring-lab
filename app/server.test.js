@@ -28,7 +28,6 @@ after(async () => {
 test('GET / returns service metadata', async () => {
   const response = await fetch(baseUrl);
   assert.equal(response.status, 200);
-
   const body = await response.json();
   assert.equal(body.service, 'ci-container-monitoring-lab');
   assert.ok(body.version);
@@ -43,7 +42,7 @@ test('GET /health reports a healthy service when maintenance is off', async () =
 test('GET /metrics exposes Prometheus request metrics', async () => {
   const response = await fetch(`${baseUrl}/metrics`);
   assert.equal(response.status, 200);
-  assert.match(response.headers.get('content-type'), /text\\/plain/);
+  assert.ok(response.headers.get('content-type').includes('text/plain'));
 
   const metrics = await response.text();
   assert.match(metrics, /http_requests_total/);
