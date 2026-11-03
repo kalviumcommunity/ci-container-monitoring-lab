@@ -1,4 +1,5 @@
 # Test-only candidate image used to prove rollback from a failed release.
-# The base is the exact known-good app image; this candidate intentionally exits.
-FROM ci-container-monitoring-lab:local
+# BASE_IMAGE must be the exact known-good image built by the Compose workflow.
+ARG BASE_IMAGE=ci-container-monitoring-lab:local
+FROM ${BASE_IMAGE}
 CMD ["node", "-e", "console.error('Intentional candidate startup failure for rollback test'); process.exit(1)"]
