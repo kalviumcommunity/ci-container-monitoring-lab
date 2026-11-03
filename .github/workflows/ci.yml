@@ -79,6 +79,11 @@ jobs:
             curl --silent --show-error --fail 'http://localhost:3000/api/datasources/proxy/uid/prometheus/api/v1/query?query=http_requests_total' | jq -e '.data.result | length > 0'
           } | tee evidence/integration-results.txt
 
+      - name: Capture rendered Grafana dashboard evidence
+        run: |
+          npx --yes playwright install --with-deps chromium
+          npx --yes playwright screenshot --browser chromium --viewport-size "1440,1000" --wait-for-timeout 20000 --full-page "http://localhost:3000/d/service-overview/service-overview?orgId=1" evidence/grafana-dashboard.png
+
       - name: Verify rollback from an unhealthy candidate to the known-good image
         run: |
           chmod +x scripts/rollback-smoke-test.sh
