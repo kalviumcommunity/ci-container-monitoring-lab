@@ -75,7 +75,7 @@ docker compose ps -a | tee "$EVIDENCE_DIR/compose-before-rollback.txt"
 APP_IMAGE="$GOOD_IMAGE" docker compose build app
 
 # Build a test-only candidate that exits non-zero during startup.
-docker build -f scripts/Dockerfile.rollback-candidate -t "$CANDIDATE_IMAGE" .
+docker build --build-arg "BASE_IMAGE=$GOOD_IMAGE" -f scripts/Dockerfile.rollback-candidate -t "$CANDIDATE_IMAGE" .
 echo "Deploying intentionally faulty image into the existing Compose app service"
 APP_IMAGE="$CANDIDATE_IMAGE" APP_RESTART_POLICY=no docker compose up -d --no-build --force-recreate app
 CANDIDATE_DEPLOYED=true
