@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: ci-container-monitoring-lab:local
+    image: ${APP_IMAGE:-ci-container-monitoring-lab:local}
     container_name: lab-app
     environment:
       SERVICE_NAME: ci-container-monitoring-lab
@@ -14,11 +14,11 @@ services:
       - "8080:3000"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
-      interval: 10s
+      interval: 5s
       timeout: 3s
-      retries: 5
+      retries: 3
       start_period: 5s
-    restart: unless-stopped
+    restart: ${APP_RESTART_POLICY:-unless-stopped}
 
   prometheus:
     image: prom/prometheus:v2.53.0
