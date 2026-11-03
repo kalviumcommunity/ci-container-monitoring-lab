@@ -57,8 +57,11 @@ curl -fsS http://localhost:8080/metrics
 
 Check the Prometheus scrape target at
 `http://localhost:9090/targets`. The `ci-container-monitoring-lab` target
-should be **UP**. Grafana's provisioned **Service Overview** dashboard should
-show request-rate and request-duration data after requests have been generated.
+should be **UP**. Generate requests, then open Grafana at `http://localhost:3000`
+and inspect **Lab → Service Overview**. The request-rate and p95-duration
+panels should show time-series data. The CI artifact records API-level checks;
+capture a browser screenshot of the visible panels from your local deployment
+for reviewer-facing visual evidence.
 
 Generate sample traffic:
 
@@ -84,8 +87,13 @@ The workflow runs on pushes and pull requests. It installs locked dependencies
 on Node.js 20, runs the service tests, starts the complete Docker Compose stack,
 waits for the app, Prometheus and Grafana, generates request traffic, verifies
 that Prometheus reports the app target as UP and has request metrics, and checks
-that Grafana has loaded the Service Overview dashboard. It also runs the
-rollback smoke test below. CI saves a machine-readable integration report as a
+that Grafana has loaded the Service Overview dashboard and can query live
+Prometheus metrics through its provisioned datasource. It then replaces the
+app image inside the running Compose deployment with a deliberately failing
+candidate, confirms the Compose app container exits non-zero, restores the
+known-good image through Compose, and verifies app health, Prometheus target
+recovery, and Grafana datasource/dashboard access. CI uploads the health,
+target, dashboard, failed-candidate, and post-rollback Compose evidence as a
 workflow artifact.
 
 ## Rollback readiness
@@ -101,20 +109,22 @@ docker compose ps
 curl -fsS http://localhost:8080/health
 ```
 
-For a repeatable automated recovery check, run the rollback smoke test after
-building the app image:
+For a repeatable recovery check, start the complete Compose stack and run:
 
 ```bash
-docker compose build app
-./scripts/rollback-smoke-test.sh ci-container-monitoring-lab:local
+docker compose up -d --build
+./scripts/generate-traffic.sh http://localhost:8080 200
+./scripts/rollback-smoke-test.sh
+docker compose ps
 ```
 
-The test first verifies the known-good image, builds a separate test-only
-candidate image that intentionally exits during startup, confirms that the
-candidate container terminates with a non-zero exit code, removes it, and
-re-deploys the previously verified known-good image. It then requires HTTP 200
-from the recovered service. This exercises an actual image replacement and
-recovery path; it does not claim that a production release was rolled back.
+The rollback test changes the image of the existing Compose `app` service to a
+test-only candidate image that intentionally exits during startup. It verifies
+the Compose-managed app container exits non-zero, restores the known-good
+image on that same Compose service, and waits for the app health check and
+Prometheus target to recover. It also verifies the Grafana dashboard and a live
+metric query through Grafana's Prometheus datasource proxy. Prometheus and
+Grafana remain part of the same Compose deployment throughout the rollback.
 
 ## Cloud release mapping (documentation only)
 
