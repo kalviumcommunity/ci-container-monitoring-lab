@@ -59,22 +59,37 @@ jobs:
 
       - name: Generate traffic and verify Prometheus scrape data
         run: |
+          mkdir -p evidence
           for i in $(seq 1 30); do
             curl --silent --fail http://localhost:8080/ >/dev/null
             curl --silent --fail http://localhost:8080/work >/dev/null
           done
           sleep 10
-          curl --silent --fail 'http://localhost:9090/api/v1/query?query=up%7Bjob%3D%22ci-container-monitoring-lab%22%7D' \
-            | jq -e '.data.result[0].value[1] == "1"'
-          curl --silent --fail 'http://localhost:9090/api/v1/query?query=http_requests_total' \
-            | jq -e '.data.result | length > 0'
-          curl --silent --fail 'http://localhost:3000/api/search?query=Service%20Overview' \
-            | jq -e 'any(.[]; .title == "Service Overview")'
+          {
+            echo "=== Application health ==="
+            curl --silent --show-error --fail http://localhost:8080/health
+            echo
+            echo "=== Prometheus target status ==="
+            curl --silent --show-error --fail 'http://localhost:9090/api/v1/query?query=up%7Bjob%3D%22ci-container-monitoring-lab%22%7D' | jq -e '.data.result[0].value[1] == "1"'
+            echo "=== Prometheus request metrics ==="
+            curl --silent --show-error --fail 'http://localhost:9090/api/v1/query?query=http_requests_total' | jq -e '.data.result | length > 0'
+            echo "=== Grafana dashboard provisioning ==="
+            curl --silent --show-error --fail 'http://localhost:3000/api/search?query=Service%20Overview' | jq -e 'any(.[]; .title == "Service Overview")'
+          } | tee evidence/integration-results.txt
 
       - name: Verify rollback from an unhealthy candidate to the known-good image
         run: |
           chmod +x scripts/rollback-smoke-test.sh
-          ./scripts/rollback-smoke-test.sh ci-container-monitoring-lab:local
+          ./scripts/rollback-smoke-test.sh ci-container-monitoring-lab:local | tee evidence/rollback-results.txt
+
+      - name: Save CI evidence artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-monitoring-rollback-evidence
+          path: evidence/
+          if-no-files-found: warn
+          retention-days: 14
 
       - name: Capture diagnostics on failure
         if: failure()
