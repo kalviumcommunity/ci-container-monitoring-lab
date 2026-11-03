@@ -6,9 +6,9 @@ RUN apk add --no-cache curl
 
 WORKDIR /usr/src/app
 
-# Install dependencies first so Docker can cache this layer.
-COPY app/package.json ./
-RUN npm install --omit=dev
+# Install the exact dependency tree captured in the lockfile.
+COPY app/package.json app/package-lock.json ./
+RUN npm ci --omit=dev
 
 # Copy the application source.
 COPY app/ ./
